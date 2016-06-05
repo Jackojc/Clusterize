@@ -107,22 +107,36 @@ class clusterize():
         self.write_on(source, mid)
         return self.cmd_on("sudo python3 {}".format(self.remote_temp), mid)
 
-    def task_all(self, function, args):
-        source = self.get_function(function, args)
-        return self.parallelize(self.tasker, (source, args))
+    def task(self, function, args, on=0):
+        if on:
+            args = list(args)
+            source = self.get_function(function, args)
+            self.write_on(source, self.machine_to_run)
+            thread = self.Pool.apply_async(self.cmd_on, ("sudo python3 {}".format(self.remote_temp), self.machine_to_run))
 
-    def task(self, function, args):
-        args = list(args)
-        source = self.get_function(function, args)
-        self.write_on(source, self.machine_to_run)
-        thread = self.Pool.apply_async(self.cmd_on, ("sudo python3 {}".format(self.remote_temp), self.machine_to_run))
+            return thread
+        elif not on:
+            args = list(args)
+            source = self.get_function(function, args)
+            threads = []
+            args.append(0)
 
-        return thread
+            for num, machine in enumerate(self.Sessions):
+                threads.append(self.Pool.apply_async(target, tuple(args)))
+                args[-1] = num+1
+
+            return threads
 
     def result(self,task):
-        if self.machine_to_run == len(self.Accounts)-1:
-            self.machine_to_run = 0
+        if type(task) is list:
+            results = []
+            for machine in task:
+                results.append(machine.get())
         else:
-            self.machine_to_run += 1
+            if self.machine_to_run == len(self.Accounts)-1:
+                self.machine_to_run = 0
+            else:
+                self.machine_to_run += 1
 
-        return task.get()
+            return task.get()
+
