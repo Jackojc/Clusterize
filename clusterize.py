@@ -108,30 +108,29 @@ class clusterize():
         return self.cmd_on("sudo python3 {}".format(self.remote_temp), mid)
 
     def task(self, function, args, on=0):
-        if on:
+        if not on:
             args = list(args)
             source = self.get_function(function, args)
             self.write_on(source, self.machine_to_run)
             thread = self.Pool.apply_async(self.cmd_on, ("sudo python3 {}".format(self.remote_temp), self.machine_to_run))
 
             return thread
-        elif not on:
+        elif on:
             args = list(args)
             source = self.get_function(function, args)
             threads = []
-            args.append(0)
 
             for num, machine in enumerate(self.Sessions):
-                threads.append(self.Pool.apply_async(target, tuple(args)))
-                args[-1] = num+1
+                threads.append(self.Pool.apply_async(self.cmd_on, ("sudo python3 {}".format(self.remote_temp), num)))
 
             return threads
 
     def result(self,task):
-        if type(task) is list:
+        if isinstance(task, list):
             results = []
-            for machine in task:
-                results.append(machine.get())
+            for thread in task:
+                results.append(thread.get())
+            return results
         else:
             if self.machine_to_run == len(self.Accounts)-1:
                 self.machine_to_run = 0
@@ -139,4 +138,3 @@ class clusterize():
                 self.machine_to_run += 1
 
             return task.get()
-
