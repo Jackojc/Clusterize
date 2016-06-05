@@ -56,16 +56,12 @@ class clusterize():
                 for x in self.Sessions[mid].execute(cmd)]
 
     def read_on(self, mid):
-        f = self.Sessions[mid].open(self.remote_temp, "r")
-        a = f.read()
-        f.close()
-
-        return a.decode()
+        with self.Sessions[mid].open(self.remote_temp, "r") as f:
+            return f.read().decode()
 
     def write_on(self, string, mid):
-        f = self.Sessions[mid].open(self.remote_temp, "w")
-        f.write(string)
-        f.close()
+        with self.Sessions[mid].open(self.remote_temp, "w") as f:
+            f.write(string)
 
     def mkdir_on(self, pathname, mid):
         return self.Sessions[mid].mkdir(pathname)
@@ -107,26 +103,21 @@ class clusterize():
 
         return "".join(source)
 
-    def tasker(self, source, args, mid):
-        self.write_on(source, mid)
-        return self.cmd_on("sudo python3 {}".format(self.remote_temp), mid)
-
     def task(self, function, args, on=0):
+        args = list(args)
+        source = self.get_function(function, args)
         if not on:
-            args = list(args)
-            source = self.get_function(function, args)
             self.write_on(source, self.machine_to_run)
             thread = self.Pool.apply_async(
                 self.cmd_on, ("sudo python3 {}".format(
                     self.remote_temp), self.machine_to_run))
 
             return thread
-        elif on:
-            args = list(args)
-            source = self.get_function(function, args)
-            threads = []
 
+        elif on:
+            threads = []
             for num, machine in enumerate(self.Sessions):
+                self.write_on(source, num)
                 threads.append(
                     self.Pool.apply_async(
                         self.cmd_on,
