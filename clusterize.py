@@ -107,6 +107,10 @@ class clusterize():
         args = list(args)
         source = self.get_function(function, args)
         if not on:
+            if self.machine_to_run == len(self.Sessions) - 1:
+                self.machine_to_run = 0
+            else:
+                self.machine_to_run += 1
             self.write_on(source, self.machine_to_run)
             thread = self.Pool.apply_async(
                 self.cmd_on, ("sudo python3 {}".format(
@@ -134,9 +138,14 @@ class clusterize():
                 results.append(thread.get())
             return results
         else:
-            if self.machine_to_run == len(self.Accounts) - 1:
-                self.machine_to_run = 0
-            else:
-                self.machine_to_run += 1
-
             return task.get()
+
+    def chunks(self, l, n):
+        n = max(1, n)
+        return [l[i:i + n] for i in range(0, len(l), n)]
+
+    def dist(self, tasks):
+        threads = []
+        for item in self.chunks(tasks,len(self.Sessions)):
+            threads.extend([self.task(x[0],x[1]) for x in item])
+        return threads
