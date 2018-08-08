@@ -3,7 +3,7 @@
 
 
 #include <iostream>
-#include "clusterize.h"
+#include "../clusterize/clusterize.h"
 
 
 CLUSTERIZE_MAIN(identifier, argumentorinos) {

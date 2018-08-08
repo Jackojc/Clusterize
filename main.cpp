@@ -1,4 +1,4 @@
-#include "clusterize.h"
+#include "clusterize/clusterize.h"
 
 
 int main(int argc, char const *argv[]) {
